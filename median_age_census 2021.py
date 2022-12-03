@@ -8,6 +8,7 @@ Python3 script
 
 import numpy as np
 import pandas as pd
+import geopandas as gpd
  
 age_df = pd.read_csv('TS007_age_by_single_year_2022.csv', header = 5, skiprows = [6], skipfooter = 7, index_col='mnemonic')  # Raw data download: Census 2021 table 'TS007 - Age by Single Year' from source: https://www.nomisweb.co.uk/ at Nov 2022
 del age_df['Total']
@@ -25,6 +26,13 @@ for index, row in age_df.iterrows():
             v.append(item[0])
     m.append(np.median(v))
 df_m = pd.DataFrame({'mnemonic': age_df.index, 'Medianage': m})
-df_m.rename(columns = {'mnemonic':'msoa2021'}, inplace = True)
+df_m.rename(columns = {'mnemonic':'MSOA21CD'}, inplace = True)
 #print(df_m)
 df_m.to_csv('ew_msoa_median_age_2021.csv', index=False)
+
+#import MSOA boundaries into geodataframe
+msoa_2021_boundaries = gpd.read_file('MSOA_(Dec_2021)_Boundaries_Generalised_Clipped_EW_(BGC).geojson') #data source: https://geoportal.statistics.gov.uk/datasets/ons::msoa-dec-2021-boundaries-generalised-clipped-ew-bgc/explore?location=52.808224%2C-2.489483%2C7.76
+#join median age results
+spatial_join = msoa_2021_boundaries.merge(df_m, on='MSOA21CD')
+#export to gjson
+spatial_join.to_file('ew_msoa_median_age_2021.geojson')
