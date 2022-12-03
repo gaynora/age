@@ -25,4 +25,6 @@ for index, row in age_df.iterrows():
             v.append(item[0])
     m.append(np.median(v))
 df_m = pd.DataFrame({'mnemonic': age_df.index, 'Medianage': m})
-print(df_m)
+df_m.rename(columns = {'mnemonic':'msoa2021'}, inplace = True)
+#print(df_m)
+df_m.to_csv('ew_msoa_median_age_2021.csv', index=False)
