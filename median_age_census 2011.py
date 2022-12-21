@@ -61,7 +61,7 @@ sa_ni_2011_centroids_wgs84  = sa_ni_2011_centroids.to_crs({'init': 'epsg:4326'})
 #append centroids geodataframes into one
 append_gdf = pd.concat([oa_ew_2011_centroids, oa_scot_2011_centroids_wgs84, sa_ni_2011_centroids_wgs84])
 
-#join median age results and export to filw
+#join median age results and export to file
 spatial_join = oa_2011_boundaries.merge(df_m, on='geo_code')
 spatial_join2 = append_gdf.merge(df_m, on='geo_code')
 spatial_join.to_file("uk_oasa_median_age_2011_.shp")
