@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Dec  3 2022
+Created on Sat Dec  21 2022
 Calculating median age for UK census output areas / small areas 2011
 Python3 script
 @author: Gaynor Astbury
@@ -28,7 +28,7 @@ age_df.rename(columns = {'Age under 1':0, 'Age 1':1, 'Age 2':2, 'Age 3':3, 'Age 
 age_df[[0,1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100]].astype(np.float).astype("Int32")
 
 
-# calculate median for freq table contained in the above dataframe
+# calculate median for freq table contained in the above dataframe (age_df)
 m = list() # median list
 for index, row in age_df.iterrows():
     v = list() # value list
@@ -39,12 +39,30 @@ for index, row in age_df.iterrows():
     m.append(np.median(v))
 df_m = pd.DataFrame({'mnemonic': age_df.index, 'Medianage': m})
 df_m.rename(columns = {'mnemonic':'geo_code'}, inplace = True)
-#print(df_m)
+#export tabular results to csv
 df_m.to_csv('uk_oasa_median_age_2011.csv', index=False)
 
-#import MSOA boundaries into geodataframe
+#import relevant geography files
 oa_2011_boundaries = gpd.read_file('infuse_oa_lyr_2011.shp') #data source:  InFuse Output Areas and Small Areas, 2011 from https://borders.ukdataservice.ac.uk/
-#join median age results
+
+oa_ew_2011_centroids = gpd.read_file('Output_Areas_(Dec_2011)_PWC.geojson') #Data source:  https://geoportal.statistics.gov.uk/datasets/ons::output-areas-dec-2011-pwc/about
+oa_scot_2011_centroids = gpd.read_file('OutputArea2011_PWC.shp') #Data source: https://www.nrscotland.gov.uk/statistics-and-data/geography/our-products/census-datasets/2011-census/2011-boundaries
+# NI did not produce population-weighted centroids, but the polygon file contains coordinates for the geographic centroid of each area - create point geodataframe using the coords from the NI polygon attribute table (in geodataframe above)
+sa_ni_2011 = gpd.read_file('SA2011.shp') #Data source: https://www.nisra.gov.uk/support/geography/northern-ireland-small-areas
+sa_ni_2011_centroids = gpd.GeoDataFrame(sa_ni_2011, geometry=gpd.points_from_xy(sa_ni_2011.X_COORD,sa_ni_2011.Y_COORD)) 
+sa_ni_2011_centroids = sa_ni_2011_centroids.set_crs(29902, allow_override=True)
+#rename code fields to 'geo_code' in each geodataframe to align 
+oa_ew_2011_centroids.rename(columns = {'OA11CD':'geo_code'}, inplace = True)
+oa_scot_2011_centroids.rename(columns = {'code':'geo_code'}, inplace = True)
+sa_ni_2011_centroids.rename(columns = {'SA2011':'geo_code'}, inplace = True)
+#reproject into wgs84 so all gdf share same coordinate reference system
+oa_scot_2011_centroids_wgs84  = oa_scot_2011_centroids.to_crs({'init': 'epsg:4326'})
+sa_ni_2011_centroids_wgs84  = sa_ni_2011_centroids.to_crs({'init': 'epsg:4326'})
+#append centroids geodataframes into one
+append_gdf = pd.concat([oa_ew_2011_centroids, oa_scot_2011_centroids_wgs84, sa_ni_2011_centroids_wgs84])
+
+#join median age results and export to filw
 spatial_join = oa_2011_boundaries.merge(df_m, on='geo_code')
-#export to gjson
-spatial_join.to_file("uk_oasa_median_age_2011.geojson", driver='GeoJSON')
+spatial_join2 = append_gdf.merge(df_m, on='geo_code')
+spatial_join.to_file("uk_oasa_median_age_2011_.shp")
+spatial_join2.to_file("uk_oasa_median_age_2011.shp")
