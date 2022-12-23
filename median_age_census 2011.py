@@ -42,16 +42,19 @@ df_m.rename(columns = {'mnemonic':'geo_code'}, inplace = True)
 #export tabular results to csv
 df_m.to_csv('uk_oasa_median_age_2011.csv', index=False)
 
+#import Output Area Classification (OAC) data
+oac_2011 = pd.read_csv('2011 OAC Clusters and Names csv v2.csv') # Data source: https://www.ons.gov.uk/methodology/geography/geographicalproducts/areaclassifications/2011areaclassifications/datasets
+oac_2011.rename(columns = {'Output Area Code':'geo_code'}, inplace = True)
+
 #import relevant geography files
 oa_2011_boundaries = gpd.read_file('infuse_oa_lyr_2011.shp') #data source:  InFuse Output Areas and Small Areas, 2011 from https://borders.ukdataservice.ac.uk/
-
 oa_ew_2011_centroids = gpd.read_file('Output_Areas_(Dec_2011)_PWC.geojson') #Data source:  https://geoportal.statistics.gov.uk/datasets/ons::output-areas-dec-2011-pwc/about
 oa_scot_2011_centroids = gpd.read_file('OutputArea2011_PWC.shp') #Data source: https://www.nrscotland.gov.uk/statistics-and-data/geography/our-products/census-datasets/2011-census/2011-boundaries
 # NI did not produce population-weighted centroids, but the polygon file contains coordinates for the geographic centroid of each area - create point geodataframe using the coords from the NI polygon attribute table (in geodataframe above)
 sa_ni_2011 = gpd.read_file('SA2011.shp') #Data source: https://www.nisra.gov.uk/support/geography/northern-ireland-small-areas
 sa_ni_2011_centroids = gpd.GeoDataFrame(sa_ni_2011, geometry=gpd.points_from_xy(sa_ni_2011.X_COORD,sa_ni_2011.Y_COORD)) 
 sa_ni_2011_centroids = sa_ni_2011_centroids.set_crs(29902, allow_override=True)
-#rename code fields to 'geo_code' in each geodataframe to align 
+#rename code fields to 'geo_code' in each geodataframes to align 
 oa_ew_2011_centroids.rename(columns = {'OA11CD':'geo_code'}, inplace = True)
 oa_scot_2011_centroids.rename(columns = {'code':'geo_code'}, inplace = True)
 sa_ni_2011_centroids.rename(columns = {'SA2011':'geo_code'}, inplace = True)
@@ -61,8 +64,10 @@ sa_ni_2011_centroids_wgs84  = sa_ni_2011_centroids.to_crs({'init': 'epsg:4326'})
 #append centroids geodataframes into one
 append_gdf = pd.concat([oa_ew_2011_centroids, oa_scot_2011_centroids_wgs84, sa_ni_2011_centroids_wgs84])
 
-#join median age results and export to file
+#join median age and OAC results and export to file
 spatial_join = oa_2011_boundaries.merge(df_m, on='geo_code')
 spatial_join2 = append_gdf.merge(df_m, on='geo_code')
-spatial_join.to_file("uk_oasa_median_age_2011_.shp")
-spatial_join2.to_file("uk_oasa_median_age_2011.shp")
+spatial_join3 = oa_2011_boundaries.merge(oac_2011, on='geo_code')
+spatial_join4 = append_gdf.merge(oac_2011, on='geo_code')
+spatial_join3.to_file("uk_oasa_median_age_2011_.shp")
+spatial_join4.to_file("uk_oasa_median_age_2011.shp")
