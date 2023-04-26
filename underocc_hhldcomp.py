@@ -30,7 +30,6 @@ joined.drop(['a2', 'a0', 'a1', 'a-1', 'b2', 'b1', 'b0', 'b-1'], inplace=True, ax
 print(joined)
 
 #calculate median occupancy rating for all households
-#convert to function and feed in each of 2 dataframes
 def calcmedian(x_df):
   x_df[[2,1,0,-1]].astype(numpy.float).astype("Int32")
 
@@ -56,10 +55,11 @@ spatial_join = oas_gdf.merge(medianallh, on='mnemonic')
 spatial_join2 = spatial_join.merge(medianoldh, on='mnemonic')
 
 
-# map visualisation with geoplot
+# map visualisations with geoplot
 scheme = mapclassify.UserDefined(spatial_join2['Medoccall'], bins=[-1, 0, 1, 2])
 mapall = geoplot.choropleth(spatial_join2, projection=gcrs.OSGB(), hue='Medoccall', scheme=scheme, cmap='Greens', legend=True)
+scheme = mapclassify.UserDefined(spatial_join2['Medoccold'], bins=[-1, 0, 1, 2])
+mapall = geoplot.choropleth(spatial_join2, projection=gcrs.OSGB(), hue='Medoccold', scheme=scheme, cmap='Greens', legend=True)
 
-
-#rawdata_df.to_csv('result.csv')
-#spatial_join2.to_file('result.gpkg', driver='GPKG') # to export the spatial vector file if needed
+spatial_join2.to_csv('result.csv')
+spatial_join2.to_file('result.gpkg', driver='GPKG') # to export the spatial vector file if needed
